@@ -132,6 +132,6 @@ server.del('/timers', function(req, res, next){
 
 
 
-server.listen(process.evn.PORT || 5000, function(){
+server.listen(process.env.PORT || 5000, function(){
 	console.log('%s listening at %s', server.name, server.url);
 });
