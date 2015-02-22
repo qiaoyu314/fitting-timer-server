@@ -1,6 +1,7 @@
 
 var restify = require('restify');
 var MongoClient = require('mongodb').MongoClient;
+ObjectID = require('mongodb').ObjectID;
 var assert = require('assert');
 
 
@@ -22,6 +23,7 @@ MongoClient.connect('mongodb://fittingTimerUser:test@ds051750.mongolab.com:51750
  * plug in
  */
 server.use(restify.bodyParser());
+server.use(restify.queryParser());
 server.use(function(req, res, next){
 	console.log('get request from: ' + req.time());
 	next();
@@ -34,7 +36,7 @@ server.use(function(req, res, next){
 
  var createTimer = function(db, timer, callback){
  	timer.creationTime = new Date();
- 	delete timer._id;	//need to clear out the _id
+
  	var collection = db.collection('timers');
  	collection.insert(timer,function(err, result){
  		if(err){
@@ -44,14 +46,32 @@ server.use(function(req, res, next){
  	});
  } 
 
-var findTimers = function(db, callback){
+//find all timers
+var findTimers = function(db, loadSize, loadFrom, callback){
 	var collection = db.collection('timers');
-	collection.find({}).toArray(function(err, result){
-		assert.equal(err, null, "Find timers error");
-		callback(result);
-	});
+	if(loadFrom){
+		loadFrom = new ObjectID(loadFrom);
+		collection.find({_id: {$gt: loadFrom}}).sort({_id: 1}).toArray(function(err, result){
+			console.log(result);
+		});
+		
+		collection.find({_id: {$gt: loadFrom}}).sort({_id: 1}).limit(loadSize).toArray(function(err, result){
+				assert.equal(err, null, "Find timers error");
+				callback(result);
+			});	
+	}else{
+		collection.find({},{name: 1}).sort({_id: 1}).toArray(function(err, result){
+			console.log(result);
+		});
+		collection.find().sort({_id: 1}).limit(loadSize).toArray(function(err, result){
+				assert.equal(err, null, "Find timers error");
+				callback(result);
+			});
+	}
+	
 }
 
+//delete all timers
 var deleteTimers = function(db, callback){
 	var collection = db.collection('timers');
 	collection.remove(function(err, num){
@@ -65,26 +85,30 @@ var Timer = function(){
 	this.roundLength = 30,
 	this.restLength = 20,
 	this.coolDownLength = 30,
-	this.cycle = 10
+	this.cycle = 10,
+	this.description = "This is a good timer"
 };
 /**
  * routing
  */
 
 
-//get next 10 timers
 server.get('/timers', function(req, res, next){
-	findTimers(mongodb, function(timers){
+	var loadSize, loadFrom;
+	if(req.query){
+		//print out all properties 
+		console.log("Has query");
+
+		if(req.query.loadParams){
+			console.log("has load params");
+			loadSize = parseInt(req.query.loadParams.loadSize);
+			loadFrom = req.query.loadParams.loadFrom;
+		}
+	}
+	console.log("size: " + loadSize + " from: " + loadFrom);
+	findTimers(mongodb, loadSize, loadFrom, function(timers){
 		res.send(200, {timers: timers});
 	});
-
-/*
-	res.send(200, 
-		[{id: 1, name: 'timer 1', Descripton: 'This is a good timer'},
-		{id: 1, name: 'timer 2', Descripton: 'This is also a good timer'}
-		]);
-	//res.send('test');
-*/
 	next();
 });
 
