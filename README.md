@@ -1,6 +1,6 @@
-## This is a Node applciation, providing REST APIs for [fitting timer iOS app](https://github.com/qiaoyu314/Interval-Timer).
+**This is a Node applciation, providing REST APIs for [fitting timer iOS app](https://github.com/qiaoyu314/Interval-Timer).**
 
-## Available API:
+#### Available API:
 
 - Get all timers: [GET] /timers 
 - Create a timer: [POST] /timers
